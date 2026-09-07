@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Padosi Pro</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  :root {
+    color-scheme: dark;
+    /* Dark theme (default) — indigo/violet primary, teal accent, amber/rose/emerald for meaning */
+    --bg: #0B0F1A;
+    --bg-elev: #10151f;
+    --bg-elev-2: #171e2d;
+    --surface: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+
+    --primary: #818CF8;
+    --primary-bright: #A5B4FC;
+    --primary-rgb: 129,140,248;
+    --primary-dim: rgba(129,140,248,0.15);
+
+    --accent: #2DD4BF;
+    --accent-bright: #5EEAD4;
+    --accent-rgb: 45,212,191;
+
+    --warning: #FBBF24;
+    --warning-rgb: 251,191,36;
+
+    --danger: #FB7185;
+    --danger-rgb: 251,113,133;
+
+    --success: #34D399;
+    --success-rgb: 52,211,153;
+
+    --text: #F1F5F9;
+    --text-dim: #94A3B8;
+    --text-faint: #475569;
+
+    --radius: 20px;
+    --radius-sm: 12px;
+    --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --expo: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  :root[data-theme="light"] {
+    color-scheme: light;
+    /* Light theme — same hues, tuned for white backgrounds */
+    --bg: #F8FAFC;
+    --bg-elev: #FFFFFF;
+    --bg-elev-2: #F1F5F9;
+    --surface: rgba(15,23,42,0.04);
+    --border: rgba(15,23,42,0.08);
+
+    --primary: #6366F1;
+    --primary-bright: #4F46E5;
+    --primary-rgb: 99,102,241;
+    --primary-dim: rgba(99,102,241,0.12);
+
+    --accent: #0D9488;
+    --accent-bright: #0F766E;
+    --accent-rgb: 13,148,136;
+
+    --warning: #D97706;
+    --warning-rgb: 217,119,6;
+
+    --danger: #E11D48;
+    --danger-rgb: 225,29,72;
+
+    --success: #059669;
+    --success-rgb: 5,150,105;
+
+    --text: #0F172A;
+    --text-dim: #475569;
+    --text-faint: #94A3B8;
+  }
+
+  body { transition: background-color 0.3s var(--expo), color 0.3s var(--expo); }
+
+  /* ============ Splash screen: hyperlocal "signal ping" ============ */
+  .splash {
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.5s var(--expo);
+  }
+  .splash.hide { opacity: 0; pointer-events: none; visibility: hidden; transition: opacity 0.5s var(--expo), visibility 0s 0.5s; }
+  .splash-rings {
+    position: relative; width: 110px; height: 110px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .splash-ring {
+    position: absolute; border-radius: 50%; border: 2px solid var(--primary);
+    width: 56px; height: 56px; opacity: 0;
+    animation: ringPulse 1.8s ease-out infinite;
+  }
+  .splash-ring.r2 { border-color: var(--accent); animation-delay: 0.35s; }
+  .splash-ring.r3 { border-color: var(--warning); animation-delay: 0.7s; }
+  @keyframes ringPulse {
+    0% { transform: scale(0.6); opacity: 0.85; }
+    100% { transform: scale(2.6); opacity: 0; }
+  }
+  .splash-mark {
+    width: 60px; height: 60px; border-radius: 17px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 26px; color: #fff;
+    position: relative; z-index: 2;
+    animation: markPop 0.6s var(--spring);
+    box-shadow: 0 8px 28px rgba(var(--primary-rgb), 0.4);
+  }
+  @keyframes markPop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+  .splash-tagline {
+    margin-top: 20px; font-size: 15px; font-weight: 700; letter-spacing: 0.3px;
+    color: var(--text-dim); opacity: 0;
+    animation: splashFadeUp 0.6s var(--expo) 0.35s forwards;
+  }
+  @keyframes splashFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #app {
+    max-width: 460px;
+    margin: 0 auto;
+    height: 100vh;
+    height: 100dvh;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  .screen {
+    position: absolute; inset: 0;
+    overflow-y: auto; overflow-x: hidden;
+    padding: 0 20px 110px;
+    opacity: 0; pointer-events: none;
+    transform: translateY(16px) scale(0.97);
+    transition: opacity 0.4s var(--expo), transform 0.45s var(--expo);
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active { opacity: 1; pointer-events: all; transform: translateY(0) scale(1); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    padding: 18px 0 12px;
+    background: linear-gradient(to bottom, var(--bg) 65%, transparent);
+    backdrop-filter: blur(20px);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-bright), var(--primary));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #fff; font-size: 16px;
+    box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.3);
+  }
+  .brand-text { font-weight: 600; font-size: 18px; letter-spacing: -0.3px; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text); cursor: pointer; position: relative;
+    transition: transform 0.2s var(--spring); font-size: 16px;
+  }
+  .icon-btn:active { transform: scale(0.9); }
+  .icon-btn .badge {
+    position: absolute; top: -2px; right: -2px;
+    min-width: 16px; height: 16px; padding: 0 3px;
+    background: var(--danger); border-radius: 999px;
+    font-size: 9px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg);
+  }
+
+  .hero-3d {
+    position: relative; height: 150px; margin: 8px 0 20px; perspective: 1000px;
+  }
+  .hero-3d-inner {
+    width: 100%; height: 100%; border-radius: var(--radius);
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.18), rgba(var(--accent-rgb), 0.08));
+    border: 1px solid rgba(var(--primary-rgb), 0.2);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; padding: 22px;
+  }
+  .hero-3d-inner::before {
+    content: ''; position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(var(--primary-rgb), 0.18), transparent 60%);
+    pointer-events: none;
+  }
+  .hero-3d h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; position: relative; }
+  .hero-3d p { color: var(--text-dim); font-size: 13px; position: relative; }
+
+  .section-title {
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin: 22px 0 12px; display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .filter-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 4px; scrollbar-width: none; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto; padding: 8px 16px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 13px; color: var(--text-dim); cursor: pointer; white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 600; }
+
+  .search-bar {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 10px 14px; margin: 10px 0;
+  }
+  .search-bar input { background: none; border: none; outline: none; color: var(--text); font-size: 14px; flex: 1; font-family: inherit; }
+  .search-bar input::placeholder { color: var(--text-faint); }
+
+  .task-list { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
+  .task-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; position: relative; overflow: hidden;
+    animation: cardIn 0.4s var(--expo) both;
+  }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .task-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, var(--primary), transparent); opacity: 0.5;
+  }
+  .task-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
+  .task-category {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+    color: var(--primary); background: rgba(var(--primary-rgb), 0.1); padding: 4px 10px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .task-title { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3; }
+  .task-price { font-family: 'Space Grotesk', monospace; font-size: 19px; font-weight: 700; color: var(--primary-bright); white-space: nowrap; }
+  .task-desc {
+    font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 12px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .task-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .task-tag {
+    font-size: 11px; padding: 4px 10px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim); display: inline-flex; align-items: center; gap: 4px;
+  }
+  .task-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  .tasker-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); }
+  .tasker-avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff;
+  }
+
+  .btn {
+    border: none; border-radius: 14px; padding: 11px 20px; font-size: 14px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: transform 0.15s var(--spring), box-shadow 0.2s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-bright)); color: #fff; box-shadow: 0 4px 20px rgba(var(--primary-rgb), 0.35); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-danger { background: rgba(var(--danger-rgb),0.12); color: var(--danger); border: 1px solid rgba(var(--danger-rgb),0.3); }
+  .btn-block { width: 100%; }
+  .btn-sm { padding: 8px 14px; font-size: 13px; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+
+  /* Bottom nav — "bead" dock style: each tab has its own accent color, and the
+     active tab's icon pops up above the bar in a glowing colored circle. */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 460px;
+    background: var(--bg-elev); border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; align-items: flex-end;
+    padding: 10px 6px calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
+  }
+  .nav-item {
+    position: relative; flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; font-family: inherit; cursor: pointer;
+    padding: 4px 2px 2px;
+  }
+  .nav-bead {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--text-faint);
+    transition: transform 0.4s var(--spring), background-color 0.35s var(--expo), box-shadow 0.35s var(--expo), color 0.3s;
+  }
+  .nav-label {
+    font-size: 10px; font-weight: 600; color: var(--text-faint);
+    transition: color 0.3s;
+  }
+  .nav-item.active .nav-bead {
+    transform: translateY(-16px) scale(1.12);
+    background: var(--tab-color);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(var(--tab-color-rgb), 0.45), 0 0 26px 8px rgba(var(--tab-color-rgb), 0.3);
+  }
+  .nav-item.active .nav-label { color: var(--tab-color); font-weight: 700; }
+
+  /* Forms */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
+  .field input, .field select, .field textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px;
+    font-family: inherit; outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .cat-pick {
+    padding: 12px 6px; border-radius: 12px; text-align: center; font-size: 12px;
+    background: var(--surface); border: 1px solid var(--border); cursor: pointer; color: var(--text-dim);
+  }
+  .cat-pick.active { border-color: var(--primary); color: var(--primary); background: rgba(var(--primary-rgb), 0.08); }
+  .cat-pick .emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+
+  /* Auth screen */
+  /* ============ Lamp pull-string login animation ============ */
+  .lamp-stage {
+    position: relative;
+    min-height: 100dvh;
+    background: radial-gradient(ellipse at 50% 0%, #14101f 0%, #05060a 65%);
+    display: flex; flex-direction: column; align-items: center;
+    overflow: hidden; padding-top: 64px;
+  }
+  .lamp-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+  .lamp-particle {
+    position: absolute; width: 3px; height: 3px; border-radius: 50%;
+    background: var(--warning, #FBBF24); opacity: 0;
+    box-shadow: 0 0 6px 1px rgba(251,191,36,0.8);
+    animation: firefly 5s ease-in-out infinite;
+  }
+  @keyframes firefly {
+    0% { opacity: 0; transform: translateY(0) translateX(0); }
+    15% { opacity: 0.9; }
+    50% { transform: translateY(-60px) translateX(12px); }
+    85% { opacity: 0.5; }
+    100% { opacity: 0; transform: translateY(-130px) translateX(-8px); }
+  }
+
+  .lamp-beam {
+    position: absolute; top: 150px; left: 50%; transform: translateX(-50%);
+    width: 40px; height: 0;
+    background: linear-gradient(180deg, rgba(251,191,36,0.35), rgba(251,191,36,0.02) 80%);
+    clip-path: polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%);
+    opacity: 0; transition: opacity 1.1s var(--expo), height 1.1s var(--expo);
+    filter: blur(2px);
+  }
+  .lamp-stage.on .lamp-beam { opacity: 1; height: 420px; }
+
+  .lamp-rig { position: relative; z-index: 3; display: flex; flex-direction: column; align-items: center; }
+  .lamp-shade {
+    width: 100px; height: 46px;
+    background: linear-gradient(180deg, #2a2a34, #17171d);
+    border-radius: 50px 50px 8px 8px;
+    position: relative;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  }
+  .lamp-glow {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #4a4030;
+    box-shadow: 0 0 0 rgba(251,191,36,0);
+    transition: background 0.6s var(--expo), box-shadow 0.8s var(--expo);
+  }
+  .lamp-stage.on .lamp-glow {
+    background: #FDE68A;
+    box-shadow: 0 0 40px 18px rgba(251,191,36,0.55), 0 0 90px 50px rgba(251,191,36,0.18);
+  }
+  .lamp-cord { width: 2px; height: 46px; background: #3a3a44; }
+  .lamp-pull {
+    cursor: pointer; padding: 6px 20px 16px; margin-top: -4px;
+    display: flex; justify-content: center;
+    animation: swing 4s ease-in-out infinite;
+    transform-origin: top center;
+  }
+  .lamp-stage.on .lamp-pull { animation: none; }
+  @keyframes swing {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+  .lamp-pull-knob {
+    width: 14px; height: 20px; border-radius: 7px;
+    background: linear-gradient(180deg, #d8c48a, #b89b5e);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .lamp-pull:active .lamp-pull-knob { transform: translateY(6px); }
+
+  .lamp-hint {
+    position: relative; z-index: 3;
+    color: rgba(255,255,255,0.35); font-size: 13px; margin-top: 18px;
+    transition: opacity 0.5s var(--expo);
+  }
+  .lamp-stage.on .lamp-hint { opacity: 0; height: 0; margin: 0; overflow: hidden; }
+
+  .auth-wrap {
+    position: relative; z-index: 3;
+    width: 100%; max-width: 360px; margin: 28px auto 0; padding: 26px 22px 30px;
+    background: rgba(18,16,28,0.55);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px;
+    backdrop-filter: blur(20px);
+    opacity: 0; transform: translateY(24px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 0.8s var(--expo) 0.15s, transform 0.8s var(--expo) 0.15s;
+  }
+  .lamp-stage.on .auth-wrap { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+  .lamp-stage:not(.on) .auth-wrap { visibility: hidden; }
+  .lamp-stage.on .auth-wrap { visibility: visible; }
+
+  .auth-logo { text-align: center; margin-bottom: 28px; }
+  .auth-logo .brand-mark { width: 60px; height: 60px; border-radius: 17px; margin: 0 auto 14px; font-size: 26px; }
+  .auth-logo h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; color: #fff; }
+  .auth-logo p { color: rgba(255,255,255,0.5); font-size: 13px; margin-top: 6px; }
+  .lamp-stage .field label { color: rgba(255,255,255,0.5); }
+  .lamp-stage .field input {
+    background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); color: #fff;
+  }
+  .lamp-stage .auth-toggle { background: rgba(255,255,255,0.06); }
+  .lamp-stage .auth-toggle button { color: rgba(255,255,255,0.5); }
+  .auth-toggle { display: flex; background: var(--surface); border-radius: 14px; padding: 4px; margin-bottom: 20px; }
+  .auth-toggle button {
+    flex: 1; background: none; border: none; padding: 10px; border-radius: 10px;
+    color: var(--text-dim); font-weight: 600; font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .auth-toggle button.active { background: var(--primary); color: #fff; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
+  }
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .label { font-size: 13px; color: var(--text-dim); }
+  .stat-row .value { font-size: 14px; font-weight: 600; }
+
+  .wallet-hero {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.18), rgba(var(--accent-rgb), 0.06));
+    border: 1px solid rgba(var(--primary-rgb), 0.25); border-radius: var(--radius);
+    padding: 24px; text-align: center; margin: 8px 0 20px;
+  }
+  .wallet-hero .amount { font-family: 'Space Grotesk', monospace; font-size: 40px; font-weight: 700; color: var(--primary-bright); }
+  .wallet-hero .label { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+  /* Payment method rows */
+  .pm-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px 14px; margin-bottom: 8px;
+  }
+  .pm-row-left { display: flex; align-items: center; gap: 10px; }
+  .pm-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    background: var(--bg-elev-2);
+  }
+  .pm-label { font-size: 13px; font-weight: 600; }
+  .pm-sub { font-size: 11px; color: var(--text-faint); }
+  .pm-default-badge {
+    font-size: 10px; color: var(--success); font-weight: 700;
+    background: rgba(var(--success-rgb),0.12); padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+  }
+  .pm-delete { color: var(--danger); font-size: 15px; cursor: pointer; padding: 4px 8px; background: none; border: none; }
+
+  /* UPI add preview */
+  .upi-preview {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb),0.15), rgba(var(--primary-rgb),0.08));
+    border: 1px solid var(--border); border-radius: 16px; padding: 18px;
+    display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
+  }
+  .upi-preview-icon { font-size: 22px; }
+  .upi-preview-text { flex: 1; font-family: 'Space Grotesk', monospace; font-size: 14px; color: var(--text); word-break: break-all; }
+  .upi-preview-check { color: var(--success); opacity: 0; transition: opacity 0.3s; font-size: 18px; font-weight: 700; }
+  .upi-preview-check.valid { opacity: 1; }
+
+  /* Animated 3D card for adding a card */
+  .card3d-stage { perspective: 1200px; margin-bottom: 20px; }
+  .card3d {
+    width: 100%; aspect-ratio: 1.586 / 1; position: relative;
+    transform-style: preserve-3d; transition: transform 0.6s var(--expo);
+  }
+  .card3d.flipped { transform: rotateY(180deg); }
+  .card3d-face {
+    position: absolute; inset: 0; border-radius: 16px; backface-visibility: hidden;
+    padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .card3d-front {
+    background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff;
+    box-shadow: 0 14px 30px rgba(var(--primary-rgb), 0.35);
+  }
+  .card3d-back {
+    background: linear-gradient(135deg, var(--bg-elev-2), var(--bg-elev));
+    transform: rotateY(180deg); border: 1px solid var(--border);
+  }
+  .card3d-top-row { display: flex; justify-content: space-between; align-items: center; }
+  .card3d-chip { width: 34px; height: 24px; border-radius: 5px; background: linear-gradient(135deg,#e8d48a,#c9a227); }
+  .card3d-brand { font-weight: 800; font-size: 13px; letter-spacing: 1px; }
+  .card3d-number { font-family: 'Space Grotesk', monospace; font-size: 17px; letter-spacing: 2px; margin: 12px 0; }
+  .card3d-bottom-row { display: flex; justify-content: space-between; }
+  .card3d-label { font-size: 8px; opacity: 0.75; letter-spacing: 1px; margin-bottom: 2px; }
+  .card3d-value { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .card3d-stripe { width: 100%; height: 34px; background: #1a1a22; margin-top: 10px; border-radius: 2px; }
+  .card3d-cvc-row { margin-top: 16px; display: flex; flex-direction: column; align-items: flex-end; padding-right: 4px; }
+  .card3d-cvc-label { font-size: 8px; color: var(--text-faint); margin-bottom: 4px; letter-spacing: 1px; }
+  .card3d-cvc-box {
+    background: #fff; color: #111; font-family: 'Space Grotesk', monospace;
+    padding: 5px 12px; border-radius: 4px; font-size: 13px; letter-spacing: 2px; min-width: 44px; text-align: center;
+  }
+  .card-success-check {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(var(--success-rgb),0.15); color: var(--success);
+    font-size: 26px; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto; box-shadow: 0 0 0 8px rgba(var(--success-rgb),0.08);
+    animation: successPop 0.5s var(--spring);
+  }
+  @keyframes successPop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  /* Skeleton loading shimmer — nicer than a plain "Loading…" text while the feed fetches */
+  .skeleton-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 12px; overflow: hidden; position: relative;
+  }
+  .skeleton-line {
+    height: 12px; border-radius: 6px; margin-bottom: 10px;
+    background: linear-gradient(90deg, var(--bg-elev-2) 25%, var(--border) 50%, var(--bg-elev-2) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+  .skeleton-line.w-60 { width: 60%; }
+  .skeleton-line.w-40 { width: 40%; height: 20px; margin-bottom: 14px; }
+  .skeleton-line.w-90 { width: 90%; }
+  .skeleton-line.w-30 { width: 30%; margin-bottom: 0; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* Chat bubbles */
+  .chat-bubble-row { display: flex; margin-bottom: 10px; }
+  .chat-bubble-row.mine { justify-content: flex-end; }
+  .chat-bubble {
+    max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.4;
+  }
+  .chat-bubble-row.mine .chat-bubble { background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+  .chat-bubble-row:not(.mine) .chat-bubble { background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .chat-bubble-time { font-size: 10px; color: var(--text-faint); margin-top: 3px; }
+  .chat-bubble-row.mine .chat-bubble-time { text-align: right; }
+
+  /* Shown across the whole app whenever the server has MOCK_PAYMENTS=true, so
+     nobody mistakes a simulated payment for a real one. */
+  .mock-banner {
+    position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 460px; z-index: 300;
+    background: linear-gradient(90deg, var(--warning), var(--danger));
+    color: #1a1200; font-size: 11px; font-weight: 700; text-align: center;
+    padding: 5px 10px; letter-spacing: 0.3px;
+  }
+
+  .txn-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .txn-row:last-child { border-bottom: none; }
+  .txn-title { font-size: 14px; font-weight: 500; }
+  .txn-date { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+  .txn-amount { font-family: 'Space Grotesk', monospace; font-weight: 700; color: var(--success); }
+
+  .notif-item {
+    display: flex; gap: 12px; padding: 14px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--border); margin-bottom: 8px;
+  }
+  .notif-item.unread { border-color: rgba(var(--primary-rgb), 0.3); background: rgba(var(--primary-rgb), 0.05); }
+  .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 6px; }
+  .notif-title { font-size: 13px; font-weight: 600; }
+  .notif-body { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .notif-time { font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+
+  /* Modal / task detail sheet */
+  .sheet-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .sheet-overlay.open { opacity: 1; pointer-events: all; }
+  .sheet {
+    position: fixed; left: 50%; bottom: 0; transform: translate(-50%, 100%);
+    width: 100%; max-width: 460px; max-height: 85vh; overflow-y: auto;
+    background: var(--bg-elev); border-radius: 24px 24px 0 0;
+    border-top: 1px solid var(--border);
+    padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+    z-index: 201; transition: transform 0.4s var(--expo);
+  }
+  .sheet.open { transform: translate(-50%, 0); }
+  .sheet-handle { width: 40px; height: 4px; background: var(--text-faint); opacity: 0.4; border-radius: 999px; margin: 0 auto 16px; }
+  .sheet-close { position: absolute; top: 16px; right: 16px; }
+
+  .stars { display: flex; gap: 6px; justify-content: center; margin: 16px 0; }
+  .star { font-size: 32px; cursor: pointer; color: var(--text-faint); transition: color 0.15s; }
+  .star.active { color: var(--primary-bright); }
+
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+    background: var(--bg-elev-2); border: 1px solid var(--border);
+    padding: 12px 20px; border-radius: 14px; font-size: 13px; font-weight: 500;
+    z-index: 500; transition: transform 0.4s var(--spring); max-width: 90%; text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { border-color: rgba(var(--danger-rgb),0.4); color: var(--danger); }
+  .toast.success { border-color: rgba(var(--success-rgb),0.4); color: var(--success); }
+
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="mock-banner hidden" id="mock-banner">🧪 TEST MODE — payments are simulated, no real money moves</div>
+
+  <!-- Splash screen: a "signal" pinging outward, like a hyperlocal request
+       reaching neighbors nearby — shown briefly on every cold start. -->
+  <div class="splash" id="splash">
+    <div class="splash-rings">
+      <span class="splash-ring r1"></span>
+      <span class="splash-ring r2"></span>
+      <span class="splash-ring r3"></span>
+      <div class="splash-mark">P</div>
+    </div>
+    <div class="splash-tagline">Padosi</div>
+  </div>
+
+
+  <!-- AUTH SCREEN -->
+  <div class="screen active" id="screen-auth" style="padding-bottom:20px; padding-left:0; padding-right:0;">
+    <div class="lamp-stage" id="lamp-stage">
+      <div class="lamp-particles" id="lamp-particles"></div>
+      <div class="lamp-beam" id="lamp-beam"></div>
+
+      <div class="lamp-rig">
+        <div class="lamp-shade" id="lamp-shade">
+          <div class="lamp-glow"></div>
+        </div>
+        <div class="lamp-cord"></div>
+        <div class="lamp-pull" id="lamp-pull" onclick="pullLamp()" role="button" aria-label="Pull to sign in">
+          <div class="lamp-pull-knob"></div>
+        </div>
+      </div>
+
+      <p class="lamp-hint" id="lamp-hint">Pull the cord to sign in</p>
+
+      <div class="auth-wrap" id="auth-wrap">
+        <div class="auth-logo">
+          <div class="brand-mark">P</div>
+          <h1>Padosi</h1>
+          <p>Kaam ho jaayega, pados se hi</p>
+        </div>
+        <div class="auth-toggle">
+          <button id="tab-login" class="active" onclick="setAuthMode('login')">Log in</button>
+          <button id="tab-signup" onclick="setAuthMode('signup')">Sign up</button>
+        </div>
+
+        <div id="signup-extra" class="hidden">
+          <div class="field"><label>Full name</label><input id="su-name" type="text" placeholder="Your name"></div>
+        </div>
+        <div class="field"><label>Phone number</label><input id="auth-phone" type="tel" placeholder="10-digit mobile number"></div>
+        <div class="field"><label>Password</label><input id="auth-password" type="password" placeholder="Min 6 characters"></div>
+        <div id="signup-extra-2" class="hidden">
+          <div class="field"><label>Hostel / Campus area</label><input id="su-area" type="text" placeholder="e.g. Boys Hostel Block A"></div>
+          <div class="row-2">
+            <div class="field"><label>Hostel block</label><input id="su-building" type="text" placeholder="e.g. Block C"></div>
+            <div class="field"><label>Room no.</label><input id="su-floor" type="text" placeholder="e.g. 204"></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="auth-submit" onclick="submitAuth()">Log in</button>
+        <p style="text-align:center; font-size:12px; color:var(--text-faint); margin-top:16px;">By continuing you agree to fair use of the Padosi community.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEED SCREEN -->
+  <div class="screen" id="screen-feed">
+    <div class="topbar">
+      <div class="brand"><div class="brand-mark">P</div><div class="brand-text">Padosi</div></div>
+      <div class="topbar-actions">
+        <div class="icon-btn" onclick="toggleTheme()" id="theme-toggle-btn">🌙</div>
+        <div class="icon-btn" onclick="goScreen('notifications')">🔔<span class="badge hidden" id="notif-badge">0</span></div>
+        <div class="icon-btn" onclick="goScreen('profile')">👤</div>
+      </div>
+    </div>
+
+    <div class="hero-3d">
+      <div class="hero-3d-inner">
+        <h2>Campus help,<br>a tap away.</h2>
+        <p id="feed-area-label">Tasks in your area, live.</p>
+      </div>
+    </div>
+
+    <div class="search-bar">
+      <span>🔍</span>
+      <input id="feed-search" type="text" placeholder="Search tasks..." oninput="debouncedLoadFeed()">
+    </div>
+
+    <div class="filter-row" id="category-filters"></div>
+
+    <div class="section-title">Open tasks nearby<span id="feed-count" style="color:var(--text-faint); font-weight:400;"></span></div>
+    <div class="task-list" id="feed-list">
+      <div class="empty-state"><div class="emoji">⏳</div>Loading tasks…</div>
+    </div>
+  </div>
+
+  <!-- POST TASK SCREEN -->
+  <div class="screen" id="screen-post">
+    <div class="topbar"><div class="brand-text">Post a task</div></div>
+    <div class="section-title">What do you need done?</div>
+    <div class="cat-grid" id="post-cat-grid"></div>
+
+    <!-- Shown only when category = "send": item needs to travel from a pickup point to the poster's address -->
+    <div id="post-send-fields" class="hidden">
+      <div class="field"><label>Pickup address (where to collect from)</label><input id="post-pickup" type="text" placeholder="e.g. Ramesh Kirana Store, Sector 5 Market"></div>
+    </div>
+
+    <!-- Shown only when category = "buy": tasker purchases something with the price acting as budget -->
+    <div id="post-buy-fields" class="hidden">
+      <div class="field"><label>What should be bought?</label><input id="post-item" type="text" placeholder="e.g. 1kg onions, 2 bread packets"></div>
+    </div>
+
+    <div class="field"><label>Title</label><input id="post-title" type="text" placeholder="e.g. Print 20 pages before 9 AM class"></div>
+    <div class="field"><label>Description</label><textarea id="post-desc" placeholder="Any details the tasker should know"></textarea></div>
+    <div class="field"><label id="post-price-label">Price (₹)</label><input id="post-price" type="number" min="1" placeholder="e.g. 40"></div>
+    <div class="field"><label id="post-area-label">Hostel / Campus area</label><input id="post-area" type="text" placeholder="e.g. Boys Hostel Block A"></div>
+    <div class="row-2">
+      <div class="field"><label>Hostel block</label><input id="post-building" type="text" placeholder="e.g. Block C"></div>
+      <div class="field"><label>Room no.</label><input id="post-floor" type="text" placeholder="e.g. 204"></div>
+    </div>
+    <p style="font-size:12px; color:var(--text-faint); margin-bottom:14px;" id="post-commission-note"></p>
+    <button class="btn btn-primary btn-block" onclick="submitTask()" id="post-submit-btn">Post task</button>
+  </div>
+
+  <!-- MY TASKS SCREEN -->
+  <div class="screen" id="screen-mytasks">
+    <div class="topbar"><div class="brand-text">My tasks</div></div>
+    <div class="filter-row">
+      <div class="chip active" data-tab="posted" onclick="setMyTasksTab('posted')">Posted by me</div>
+      <div class="chip" data-tab="accepted" onclick="setMyTasksTab('accepted')">Accepted by me</div>
+    </div>
+    <div class="task-list" id="mytasks-list"></div>
+  </div>
+
+  <!-- WALLET SCREEN -->
+  <div class="screen" id="screen-wallet">
+    <div class="topbar"><div class="brand-text">Wallet</div></div>
+    <div class="wallet-hero">
+      <div class="amount" id="wallet-balance">₹0</div>
+      <div class="label">Available balance</div>
+      <div class="label" id="wallet-pending" style="margin-top:8px;"></div>
+    </div>
+    <button class="btn btn-accent btn-block" onclick="openWithdrawSheet()" style="margin-bottom:24px;">Withdraw to UPI</button>
+
+    <div class="section-title">Payment methods<span style="color:var(--text-faint); font-weight:400; text-transform:none; letter-spacing:0;">for faster checkout</span></div>
+    <div id="payment-methods-list" style="margin-bottom:14px;"></div>
+    <div class="row-2" style="margin-bottom:24px;">
+      <button class="btn btn-ghost" onclick="openAddUpiSheet()">+ Add UPI</button>
+      <button class="btn btn-ghost" onclick="openAddCardSheet()">+ Add card</button>
+    </div>
+
+    <div class="section-title">Transaction history</div>
+    <div class="card" id="wallet-history"></div>
+  </div>
+
+  <!-- NOTIFICATIONS SCREEN -->
+  <div class="screen" id="screen-notifications">
+    <div class="topbar"><div class="brand-text">Notifications</div></div>
+    <div id="notif-list"></div>
+  </div>
+
+  <!-- PROFILE SCREEN -->
+  <div class="screen" id="screen-profile">
+    <div class="topbar"><div class="brand-text">Profile</div></div>
+    <div class="card" style="text-align:center;">
+      <div class="tasker-avatar" style="width:56px; height:56px; font-size:22px; margin:0 auto 12px;" id="profile-avatar">?</div>
+      <div style="font-size:18px; font-weight:700;" id="profile-name">—</div>
+      <div style="font-size:13px; color:var(--text-dim);" id="profile-phone">—</div>
+    </div>
+    <div class="card">
+      <div class="stat-row"><span class="label">Area</span><span class="value" id="profile-area">—</span></div>
+      <div class="stat-row"><span class="label">Rating</span><span class="value" id="profile-rating">—</span></div>
+      <div class="stat-row"><span class="label">Tasks completed</span><span class="value" id="profile-completed">—</span></div>
+      <div class="stat-row"><span class="label">Tasks posted</span><span class="value" id="profile-posted">—</span></div>
+    </div>
+
+    <div class="section-title">My activity</div>
+    <div style="display:flex; gap:10px; margin-bottom:14px;">
+      <div class="card" style="flex:1; text-align:center; margin-bottom:0;">
+        <div style="font-size:20px; font-weight:700; color:var(--success);" id="profile-total-earned">₹0</div>
+        <div style="font-size:11px; color:var(--text-faint); margin-top:2px;">Total earned</div>
+      </div>
+      <div class="card" style="flex:1; text-align:center; margin-bottom:0;">
+        <div style="font-size:20px; font-weight:700; color:var(--primary-bright);" id="profile-total-spent">₹0</div>
+        <div style="font-size:11px; color:var(--text-faint); margin-top:2px;">Total spent</div>
+      </div>
+    </div>
+    <div class="card" id="profile-activity-list"></div>
+
+    <div class="card">
+      <div class="stat-row" style="cursor:pointer;" onclick="toggleTheme()">
+        <span class="label">Appearance</span>
+        <span class="value" id="profile-theme-label">🌙 Dark</span>
+      </div>
+    </div>
+    <button class="btn btn-danger btn-block" onclick="logout()">Log out</button>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav hidden" id="bottom-nav">
+    <button class="nav-item active" data-screen="feed" style="--tab-color:var(--primary); --tab-color-rgb:var(--primary-rgb);" onclick="goScreen('feed')">
+      <span class="nav-bead"><span class="nav-icon">🏠</span></span>
+      <span class="nav-label">Feed</span>
+    </button>
+    <button class="nav-item" data-screen="post" style="--tab-color:var(--accent); --tab-color-rgb:var(--accent-rgb);" onclick="goScreen('post')">
+      <span class="nav-bead"><span class="nav-icon">➕</span></span>
+      <span class="nav-label">Post</span>
+    </button>
+    <button class="nav-item" data-screen="mytasks" style="--tab-color:var(--warning); --tab-color-rgb:var(--warning-rgb);" onclick="goScreen('mytasks')">
+      <span class="nav-bead"><span class="nav-icon">📋</span></span>
+      <span class="nav-label">My tasks</span>
+    </button>
+    <button class="nav-item" data-screen="wallet" style="--tab-color:var(--success); --tab-color-rgb:var(--success-rgb);" onclick="goScreen('wallet')">
+      <span class="nav-bead"><span class="nav-icon">💰</span></span>
+      <span class="nav-label">Wallet</span>
+    </button>
+    <button class="nav-item" data-screen="profile" style="--tab-color:var(--danger); --tab-color-rgb:var(--danger-rgb);" onclick="goScreen('profile')">
+      <span class="nav-bead"><span class="nav-icon">👤</span></span>
+      <span class="nav-label">Profile</span>
+    </button>
+  </div>
+
+  <!-- Task detail sheet -->
+  <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+  <div class="sheet" id="task-sheet">
+    <div class="sheet-handle"></div>
+    <div id="task-sheet-content"></div>
+  </div>
+
+  <!-- Chat sheet — task-specific messages between poster and tasker -->
+  <div class="sheet-overlay" id="chat-overlay" onclick="closeChatSheet()"></div>
+  <div class="sheet" id="chat-sheet" style="height: 70vh; display: flex; flex-direction: column; padding-bottom: 0;">
+    <div class="sheet-handle"></div>
+    <h3 id="chat-sheet-title" style="margin-bottom:10px;">Chat</h3>
+    <div id="chat-messages" style="flex:1; overflow-y:auto; margin-bottom:10px;"></div>
+    <div style="display:flex; gap:8px; padding-bottom:calc(16px + env(safe-area-inset-bottom));">
+      <input id="chat-input" type="text" placeholder="Type a message…" style="flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; color:var(--text); font-size:14px; font-family:inherit; outline:none;" onkeydown="if(event.key==='Enter') sendChatMessage()">
+      <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Withdraw sheet -->
+  <div class="sheet-overlay" id="withdraw-overlay" onclick="closeWithdrawSheet()"></div>
+  <div class="sheet" id="withdraw-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom:16px;">Withdraw to UPI</h3>
+    <div class="field"><label>Amount (₹)</label><input id="wd-amount" type="number" min="10" placeholder="Min ₹10"></div>
+    <div class="field"><label>UPI ID</label><input id="wd-upi" type="text" placeholder="name@bank"></div>
+    <button class="btn btn-primary btn-block" onclick="submitWithdraw()">Request withdrawal</button>
+  </div>
+
+  <!-- Add UPI sheet -->
+  <div class="sheet-overlay" id="upi-overlay" onclick="closeAddUpiSheet()"></div>
+  <div class="sheet" id="upi-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom:16px;">Add UPI ID</h3>
+    <div class="upi-preview" id="upi-preview">
+      <div class="upi-preview-icon">📱</div>
+      <div class="upi-preview-text" id="upi-preview-text">your-id@bank</div>
+      <div class="upi-preview-check" id="upi-preview-check">✓</div>
+    </div>
+    <div class="field"><label>UPI ID</label><input id="upi-input" type="text" placeholder="name@bank" oninput="updateUpiPreview()"></div>
+    <button class="btn btn-primary btn-block" onclick="submitAddUpi()">Save UPI ID</button>
+  </div>
+
+  <!-- Add Card sheet — live animated preview inspired by real card-entry flows -->
+  <div class="sheet-overlay" id="card-overlay" onclick="closeAddCardSheet()"></div>
+  <div class="sheet" id="card-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="margin-bottom:16px;">Add a card</h3>
+
+    <div class="card3d-stage" id="card3d-stage">
+      <div class="card3d" id="card3d">
+        <div class="card3d-face card3d-front">
+          <div class="card3d-top-row">
+            <div class="card3d-chip"></div>
+            <div class="card3d-brand" id="card3d-brand">CARD</div>
+          </div>
+          <div class="card3d-number" id="card3d-number">•••• •••• •••• ••••</div>
+          <div class="card3d-bottom-row">
+            <div>
+              <div class="card3d-label">CARDHOLDER</div>
+              <div class="card3d-value" id="card3d-name">YOUR NAME</div>
+            </div>
+            <div>
+              <div class="card3d-label">EXPIRES</div>
+              <div class="card3d-value" id="card3d-expiry">MM/YY</div>
+            </div>
+          </div>
+        </div>
+        <div class="card3d-face card3d-back">
+          <div class="card3d-stripe"></div>
+          <div class="card3d-cvc-row">
+            <div class="card3d-cvc-label">CVC</div>
+            <div class="card3d-cvc-box" id="card3d-cvc">•••</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="card-form-fields">
+      <div class="field"><label>Cardholder name</label><input id="card-name" type="text" placeholder="A. Sharma" oninput="updateCardPreview()"></div>
+      <div class="field"><label>Card number</label><input id="card-number" type="text" inputmode="numeric" placeholder="4242 4242 4242 4242" maxlength="23" oninput="updateCardPreview()"></div>
+      <div class="row-2">
+        <div class="field"><label>Expiry</label><input id="card-expiry" type="text" placeholder="MM/YY" maxlength="5" oninput="updateCardPreview()"></div>
+        <div class="field"><label>CVC</label><input id="card-cvc" type="text" inputmode="numeric" placeholder="123" maxlength="4" oninput="updateCardPreview()" onfocus="flipCard(true)" onblur="flipCard(false)"></div>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="submitAddCard()" id="card-submit-btn">Save card</button>
+      <p style="text-align:center; font-size:11px; color:var(--text-faint); margin-top:10px;">🔒 We only store the last 4 digits for display. Full card details are never saved on our servers.</p>
+    </div>
+
+    <div id="card-success" class="hidden" style="text-align:center; padding:16px 0;">
+      <div class="card-success-check">✓</div>
+      <div style="font-size:16px; font-weight:700; margin-top:12px;" id="card-success-label">Card saved</div>
+      <button class="btn btn-ghost" style="margin-top:16px;" onclick="closeAddCardSheet()">Done</button>
+    </div>
+  </div>
+
+  <!-- Review sheet -->
+  <div class="sheet-overlay" id="review-overlay" onclick="closeReviewSheet()"></div>
+  <div class="sheet" id="review-sheet">
+    <div class="sheet-handle"></div>
+    <h3 style="text-align:center;">Rate your experience</h3>
+    <div class="stars" id="review-stars">
+      <span class="star" data-v="1">★</span><span class="star" data-v="2">★</span><span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span>
+    </div>
+    <div class="field"><textarea id="review-comment" placeholder="Optional comment"></textarea></div>
+    <button class="btn btn-primary btn-block" onclick="submitReview()">Submit review</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ================= STATE =================
+const API = '';
+let token = localStorage.getItem('padosi_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('padosi_user') || 'null');
+let authMode = 'login';
+let currentScreen = 'feed';
+let myTasksTab = 'posted';
+let activeCategory = '';
+let activeTaskForSheet = null;
+let activeTaskForReview = null;
+let reviewRating = 0;
+let socket = null;
+let feedSearchTimer = null;
+
+const CATEGORIES = [
+  { id: '', label: 'All', emoji: '✨' },
+  { id: 'send', label: 'Send item', emoji: '📤' },
+  { id: 'buy', label: 'Buy for me', emoji: '🛒' },
+  { id: 'print', label: 'Print/Xerox', emoji: '🖨️' },
+  { id: 'delivery', label: 'Delivery', emoji: '📦' },
+  { id: 'laundry', label: 'Laundry', emoji: '👕' },
+  { id: 'cleaning', label: 'Cleaning', emoji: '🧹' },
+  { id: 'tech', label: 'Tech help', emoji: '💻' },
+  { id: 'errand', label: 'Errand', emoji: '🏃' },
+  { id: 'other', label: 'Other', emoji: '🔧' }
+];
+
+// ================= UTIL =================
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+async function api(path, opts = {}) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API + path, Object.assign({}, opts, { headers }));
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+  return data;
+}
+
+function timeAgo(iso) {
+  const d = new Date(iso.replace(' ', 'T') + 'Z');
+  const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function catMeta(id) { return CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length - 1]; }
+function initials(name) { return (name || '?').trim().charAt(0).toUpperCase(); }
+
+// ================= AUTH =================
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', mode === 'signup');
+  document.getElementById('signup-extra').classList.toggle('hidden', mode !== 'signup');
+  document.getElementById('signup-extra-2').classList.toggle('hidden', mode !== 'signup');
+  document.getElementById('auth-submit').textContent = mode === 'login' ? 'Log in' : 'Create account';
+}
+
+async function submitAuth() {
+  const phone = document.getElementById('auth-phone').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const btn = document.getElementById('auth-submit');
+  const original = btn.innerHTML;
+
+  if (!phone || !password) { toast('Phone and password required', 'error'); return; }
+
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    let data;
+    if (authMode === 'signup') {
+      const name = document.getElementById('su-name').value.trim();
+      const area = document.getElementById('su-area').value.trim();
+      const building = document.getElementById('su-building').value.trim();
+      const floor = document.getElementById('su-floor').value.trim();
+      if (!name || !area) { toast('Name and area required', 'error'); btn.innerHTML = original; return; }
+      data = await api('/api/auth/signup', { method: 'POST', body: JSON.stringify({ name, phone, password, area, building, floor }) });
+    } else {
+      data = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ phone, password }) });
+    }
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('padosi_token', token);
+    localStorage.setItem('padosi_user', JSON.stringify(currentUser));
+    toast('Welcome, ' + currentUser.name + '!', 'success');
+    enterApp();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.innerHTML = original;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('padosi_token');
+  localStorage.removeItem('padosi_user');
+  token = null; currentUser = null;
+  if (socket) socket.disconnect();
+  document.getElementById('bottom-nav').classList.add('hidden');
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-auth').classList.add('active');
+}
+
+// ================= NAVIGATION =================
+function goScreen(name) {
+  currentScreen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.screen === name));
+
+  if (name === 'feed') loadFeed();
+  if (name === 'mytasks') loadMyTasks();
+  if (name === 'wallet') loadWallet();
+  if (name === 'notifications') loadNotifications();
+  if (name === 'profile') loadProfile();
+}
+
+// ================= APP BOOTSTRAP =================
+function enterApp() {
+  document.getElementById('screen-auth').classList.remove('active');
+  document.getElementById('bottom-nav').classList.remove('hidden');
+  buildCategoryFilters();
+  buildPostCategoryGrid();
+  goScreen('feed');
+  loadProfile();
+  loadNotifBadge();
+  connectSocket();
+}
+
+function connectSocket() {
+  try {
+    socket = io();
+    socket.on('connect', () => {
+      if (currentUser && currentUser.area) socket.emit('join-area', currentUser.area);
+    });
+    socket.on('new-task', (task) => {
+      if (currentScreen === 'feed') loadFeed();
+      else toast('New task posted nearby: ' + task.title);
+    });
+    socket.on('task-updated', () => {
+      if (currentScreen === 'feed') loadFeed();
+      if (currentScreen === 'mytasks') loadMyTasks();
+      if (currentScreen === 'wallet') loadWallet();
+      loadNotifBadge();
+    });
+    socket.on('new-message', (message) => {
+      if (activeChatTaskId === message.task_id) {
+        loadChatMessages();
+      } else if (message.sender_id !== currentUser.id) {
+        toast('New message from ' + message.sender_name);
+      }
+    });
+  } catch (e) { /* socket.io not reachable, app still works without realtime */ }
+}
+
+// ================= FEED =================
+function buildCategoryFilters() {
+  const el = document.getElementById('category-filters');
+  el.innerHTML = CATEGORIES.map(c =>
+    `<div class="chip ${c.id === activeCategory ? 'active' : ''}" onclick="setCategory('${c.id}')">${c.emoji} ${c.label}</div>`
+  ).join('');
+}
+function setCategory(id) { activeCategory = id; buildCategoryFilters(); loadFeed(); }
+function debouncedLoadFeed() { clearTimeout(feedSearchTimer); feedSearchTimer = setTimeout(loadFeed, 350); }
+
+async function loadFeed() {
+  const list = document.getElementById('feed-list');
+  const q = document.getElementById('feed-search').value.trim();
+  document.getElementById('feed-area-label').textContent = currentUser && currentUser.area
+    ? `Tasks in ${currentUser.area}, live.` : 'Tasks in your area, live.';
+
+  // Skeleton shimmer while fetching, instead of a plain loading message
+  list.innerHTML = Array.from({ length: 3 }).map(() => `
+    <div class="skeleton-card">
+      <div class="skeleton-line w-30"></div>
+      <div style="height:8px;"></div>
+      <div class="skeleton-line w-40"></div>
+      <div class="skeleton-line w-90"></div>
+      <div class="skeleton-line w-60"></div>
+    </div>
+  `).join('');
+
+  try {
+    const params = new URLSearchParams();
+    if (currentUser && currentUser.area) params.set('area', currentUser.area);
+    if (q) params.set('q', q);
+    const data = await api('/api/tasks?' + params.toString());
+    let tasks = data.tasks || [];
+    if (activeCategory) tasks = tasks.filter(t => t.category === activeCategory);
+    document.getElementById('feed-count', '').textContent = tasks.length ? ` · ${tasks.length}` : '';
+    if (!tasks.length) {
+      list.innerHTML = `<div class="empty-state"><div class="emoji">🌿</div>No open tasks right now.<br>Be the first to post one!</div>`;
+      return;
+    }
+    // Stagger each card's entrance slightly for a nicer "waterfall" feel
+    list.innerHTML = tasks.map((t, i) => taskCardHTML(t, i)).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">⚠️</div>${err.message}</div>`;
+  }
+}
+
+function taskCardHTML(t, index) {
+  const cat = catMeta(t.category);
+  const delay = Math.min(index || 0, 8) * 0.06;
+  return `
+  <div class="task-card" style="animation-delay:${delay}s" onclick="openTaskSheet('${t.id}')">
+    <div class="task-category">${cat.emoji} ${cat.label}</div>
+    <div class="task-card-top">
+      <div class="task-title">${escapeHtml(t.title)}</div>
+      <div class="task-price">₹${t.price}</div>
+    </div>
+    ${t.item_name ? `<div class="task-desc">🛒 Buy: ${escapeHtml(t.item_name)}</div>` : ''}
+    ${t.description ? `<div class="task-desc">${escapeHtml(t.description)}</div>` : ''}
+    <div class="task-meta">
+      ${t.pickup_address ? `<span class="task-tag">📤 From: ${escapeHtml(t.pickup_address)}</span>` : ''}
+      <span class="task-tag">📍 ${t.category === 'send' ? 'To: ' : ''}${escapeHtml(t.area || '')}</span>
+      ${t.building ? `<span class="task-tag">🏢 ${escapeHtml(t.building)}</span>` : ''}
+    </div>
+    <div class="task-footer">
+      <div class="tasker-info">
+        <div class="tasker-avatar">${initials(t.poster_name)}</div>
+        ${escapeHtml(t.poster_name || 'Neighbor')} · ⭐ ${Number(t.poster_rating || 5).toFixed(1)}
+      </div>
+      <span style="font-size:11px; color:var(--text-faint);">${timeAgo(t.created_at)}</span>
+    </div>
+  </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ================= TASK DETAIL SHEET =================
+let allTasksCache = {};
+async function openTaskSheet(id) {
+  activeTaskForSheet = id;
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.getElementById('task-sheet').classList.add('open');
+  document.getElementById('task-sheet-content').innerHTML = '<div class="empty-state"><div class="emoji">⏳</div>Loading…</div>';
+  try {
+    const data = await api('/api/tasks?area=' + encodeURIComponent(currentUser.area || ''));
+    let t = (data.tasks || []).find(x => x.id === id);
+    if (!t) {
+      // Might be in my-tasks lists instead of open feed
+      const mine = await api('/api/tasks/mine/posted');
+      t = (mine.tasks || []).find(x => x.id === id);
+    }
+    if (!t) { const acc = await api('/api/tasks/mine/accepted'); t = (acc.tasks || []).find(x => x.id === id); }
+    if (!t) throw new Error('Task not found.');
+    renderTaskSheet(t);
+  } catch (err) {
+    document.getElementById('task-sheet-content').innerHTML = `<div class="empty-state">${err.message}</div>`;
+  }
+}
+
+function renderTaskSheet(t) {
+  const isPoster = t.poster_id === currentUser.id;
+  const isTasker = t.accepted_by === currentUser.id;
+  const cat = catMeta(t.category);
+  const isParticipant = (isPoster || isTasker) && !!t.accepted_by;
+
+  let actionHtml = '';
+  if (t.status === 'open' && !isPoster) {
+    actionHtml = `<button class="btn btn-primary btn-block" onclick="acceptTask('${t.id}')">Accept this task</button>`;
+  } else if (t.status === 'accepted' && isTasker) {
+    actionHtml = `<button class="btn btn-accent btn-block" onclick="completeTask('${t.id}')">Mark as completed</button>`;
+  } else if (t.status === 'completed' && isPoster) {
+    // Trust step: the poster must explicitly confirm the work was actually
+    // done properly before the pay button unlocks — not just tap-to-pay.
+    actionHtml = `
+      <label style="display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; font-size:13px; color:var(--text-dim); cursor:pointer;">
+        <input type="checkbox" id="confirm-done-check" onchange="document.getElementById('confirm-pay-btn').disabled = !this.checked" style="margin-top:2px; width:16px; height:16px; flex-shrink:0;">
+        <span>I've checked with the tasker and confirm this task was completed properly.</span>
+      </label>
+      <button class="btn btn-primary btn-block" id="confirm-pay-btn" disabled onclick="payForTask('${t.id}', ${t.price})">Confirm & pay ₹${t.price}</button>
+    `;
+  } else if (t.status === 'completed' && isTasker) {
+    actionHtml = `<p style="text-align:center; color:var(--text-dim); font-size:13px;">Marked as done — waiting for the poster to confirm and pay.</p>`;
+  } else if (t.status === 'paid' && (isPoster || isTasker)) {
+    actionHtml = `<button class="btn btn-ghost btn-block" onclick="openReviewSheet('${t.id}')">Leave a review</button>`;
+  } else if (t.status === 'open' && isPoster) {
+    actionHtml = `
+      <p style="text-align:center; color:var(--text-dim); font-size:13px; margin-bottom:12px;">Waiting for a neighbor to accept this task.</p>
+      <button class="btn btn-danger btn-block" onclick="cancelTask('${t.id}')">Cancel task</button>
+    `;
+  } else if (t.status === 'accepted' && isPoster) {
+    actionHtml = `<p style="text-align:center; color:var(--text-dim); font-size:13px;">A neighbor is working on this. Sit tight!</p>`;
+  } else if (t.status === 'cancelled') {
+    actionHtml = `<p style="text-align:center; color:var(--text-faint); font-size:13px;">This task was cancelled.</p>`;
+  }
+
+  if (isParticipant) {
+    actionHtml = `<button class="btn btn-ghost btn-block" style="margin-bottom:10px;" onclick="openChatSheet('${t.id}', '${escapeHtml(isPoster ? (t.accepted_by_name || 'Tasker') : (t.poster_name || 'Poster'))}')">💬 Chat</button>` + actionHtml;
+  }
+
+  document.getElementById('task-sheet-content').innerHTML = `
+    <div class="task-category">${cat.emoji} ${cat.label}</div>
+    <h2 style="font-size:20px; margin-bottom:8px;">${escapeHtml(t.title)}</h2>
+    <div class="task-price" style="font-size:26px; margin-bottom:14px;">₹${t.price}</div>
+    ${t.item_name ? `<p style="color:var(--primary-bright); font-size:14px; margin-bottom:8px;">🛒 Item to buy: ${escapeHtml(t.item_name)}</p>` : ''}
+    ${t.pickup_address ? `<p style="color:var(--accent-bright); font-size:14px; margin-bottom:8px;">📤 Pickup from: ${escapeHtml(t.pickup_address)}</p>` : ''}
+    ${t.description ? `<p style="color:var(--text-dim); font-size:14px; line-height:1.6; margin-bottom:16px;">${escapeHtml(t.description)}</p>` : ''}
+    <div class="task-meta" style="margin-bottom:18px;">
+      <span class="task-tag">📍 ${t.category === 'send' ? 'Drop at: ' : ''}${escapeHtml(t.area || '')}</span>
+      ${t.building ? `<span class="task-tag">🏢 ${escapeHtml(t.building)}</span>` : ''}
+      ${t.floor ? `<span class="task-tag">🔼 Floor ${escapeHtml(t.floor)}</span>` : ''}
+      <span class="task-tag">Status: ${t.status}</span>
+    </div>
+    ${actionHtml}
+  `;
+}
+
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.getElementById('task-sheet').classList.remove('open');
+}
+
+async function acceptTask(id) {
+  try {
+    await api('/api/tasks/' + id + '/accept', { method: 'POST' });
+    toast('Task accepted!', 'success');
+    closeSheet();
+    loadFeed(); loadMyTasks();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function cancelTask(id) {
+  if (!confirm('Cancel this task? This cannot be undone.')) return;
+  try {
+    await api('/api/tasks/' + id + '/cancel', { method: 'POST' });
+    toast('Task cancelled', 'success');
+    closeSheet();
+    loadFeed(); loadMyTasks();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function completeTask(id) {
+  try {
+    await api('/api/tasks/' + id + '/complete', { method: 'POST' });
+    toast('Marked as completed. Waiting for payment.', 'success');
+    closeSheet();
+    loadMyTasks();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function payForTask(id, price) {
+  try {
+    const order = await api('/api/payments/create-order/' + id, { method: 'POST' });
+
+    // Mock mode: no real gateway involved at all, so we simulate the payment
+    // ourselves with a clearly-labelled confirmation instead of opening a
+    // real checkout. This only ever activates if the server has
+    // MOCK_PAYMENTS=true set (see backend/.env.example).
+    if (order.mock) {
+      const ok = confirm(`[TEST MODE] Simulate paying ₹${price}?\n\nNo real money will move — this is for demo/testing only.`);
+      if (!ok) return;
+      try {
+        await api('/api/payments/verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            razorpay_order_id: order.order_id,
+            razorpay_payment_id: 'mock_pay_' + Date.now(),
+            razorpay_signature: 'mock',
+            task_id: id
+          })
+        });
+        toast('Payment successful (test mode)! Tasker credited.', 'success');
+        closeSheet();
+        loadMyTasks();
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    const rzp = new Razorpay({
+      key: order.key_id,
+      amount: order.amount,
+      currency: order.currency,
+      order_id: order.order_id,
+      name: 'Padosi',
+      description: 'Task payment',
+      theme: { color: '#6366F1' },
+      handler: async function (response) {
+        try {
+          await api('/api/payments/verify', {
+            method: 'POST',
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              task_id: id
+            })
+          });
+          toast('Payment successful! Tasker credited.', 'success');
+          closeSheet();
+          loadMyTasks();
+        } catch (err) { toast(err.message, 'error'); }
+      }
+    });
+    rzp.open();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ================= POST TASK =================
+let postCategory = 'delivery';
+function buildPostCategoryGrid() {
+  const el = document.getElementById('post-cat-grid');
+  el.innerHTML = CATEGORIES.filter(c => c.id).map(c =>
+    `<div class="cat-pick ${c.id === postCategory ? 'active' : ''}" onclick="setPostCategory('${c.id}')"><span class="emoji">${c.emoji}</span>${c.label}</div>`
+  ).join('');
+  document.getElementById('post-commission-note').textContent =
+    'Padosi keeps a small commission from the price to run the platform; the rest goes straight to the tasker\u2019s wallet.';
+}
+function setPostCategory(id) {
+  postCategory = id;
+  buildPostCategoryGrid();
+
+  const sendFields = document.getElementById('post-send-fields');
+  const buyFields = document.getElementById('post-buy-fields');
+  const priceLabel = document.getElementById('post-price-label');
+  const areaLabel = document.getElementById('post-area-label');
+
+  sendFields.classList.toggle('hidden', id !== 'send');
+  buyFields.classList.toggle('hidden', id !== 'buy');
+
+  if (id === 'send') {
+    priceLabel.textContent = 'Delivery charge (₹)';
+    areaLabel.textContent = 'Drop address (area / colony)';
+  } else if (id === 'buy') {
+    priceLabel.textContent = 'Budget incl. your fee (₹)';
+    areaLabel.textContent = 'Delivery area / colony';
+  } else {
+    priceLabel.textContent = 'Price (₹)';
+    areaLabel.textContent = 'Area / Colony';
+  }
+}
+
+async function submitTask() {
+  const title = document.getElementById('post-title').value.trim();
+  const description = document.getElementById('post-desc').value.trim();
+  const price = document.getElementById('post-price').value;
+  const area = document.getElementById('post-area').value.trim() || (currentUser && currentUser.area) || '';
+  const building = document.getElementById('post-building').value.trim();
+  const floor = document.getElementById('post-floor').value.trim();
+  const pickup_address = document.getElementById('post-pickup').value.trim();
+  const item_name = document.getElementById('post-item').value.trim();
+
+  if (!title || !price || !area) { toast('Title, price and area are required', 'error'); return; }
+  if (postCategory === 'send' && !pickup_address) { toast('Pickup address is required for a send task', 'error'); return; }
+  if (postCategory === 'buy' && !item_name) { toast('Please specify what needs to be bought', 'error'); return; }
+
+  const btn = document.getElementById('post-submit-btn');
+  const original = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await api('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify({ title, description, price, area, building, floor, category: postCategory, pickup_address, item_name })
+    });
+    toast('Task posted!', 'success');
+    document.getElementById('post-title').value = '';
+    document.getElementById('post-desc').value = '';
+    document.getElementById('post-price').value = '';
+    document.getElementById('post-pickup').value = '';
+    document.getElementById('post-item').value = '';
+    goScreen('feed');
+  } catch (err) { toast(err.message, 'error'); }
+  finally { btn.innerHTML = original; }
+}
+
+// ================= MY TASKS =================
+function setMyTasksTab(tab) {
+  myTasksTab = tab;
+  document.querySelectorAll('#screen-mytasks .chip').forEach(c => c.classList.toggle('active', c.dataset.tab === tab));
+  loadMyTasks();
+}
+
+async function loadMyTasks() {
+  const list = document.getElementById('mytasks-list');
+  list.innerHTML = `<div class="empty-state"><div class="emoji">⏳</div>Loading…</div>`;
+  try {
+    const data = await api('/api/tasks/mine/' + myTasksTab);
+    const tasks = data.tasks || [];
+    if (!tasks.length) {
+      list.innerHTML = `<div class="empty-state"><div class="emoji">🗂️</div>Nothing here yet.</div>`;
+      return;
+    }
+    list.innerHTML = tasks.map(t => {
+      const cat = catMeta(t.category);
+      return `
+      <div class="task-card" onclick="openTaskSheet('${t.id}')">
+        <div class="task-category">${cat.emoji} ${cat.label}</div>
+        <div class="task-card-top">
+          <div class="task-title">${escapeHtml(t.title)}</div>
+          <div class="task-price">₹${t.price}</div>
+        </div>
+        ${t.item_name ? `<div class="task-desc">🛒 Buy: ${escapeHtml(t.item_name)}</div>` : ''}
+        ${t.pickup_address ? `<div class="task-desc">📤 From: ${escapeHtml(t.pickup_address)}</div>` : ''}
+        <div class="task-meta">
+          <span class="task-tag">Status: ${t.status}</span>
+          ${t.payment_status === 'paid' ? '<span class="task-tag">✅ Paid</span>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="empty-state">${err.message}</div>`;
+  }
+}
+
+// ================= WALLET =================
+function animateCountUp(el, targetValue) {
+  const start = Number(el.dataset.value || 0);
+  const target = Number(targetValue) || 0;
+  if (start === target) { el.textContent = '₹' + target; el.dataset.value = target; return; }
+  const duration = 600;
+  const startTime = performance.now();
+  function tick(now) {
+    const p = Math.min((now - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const current = Math.round(start + (target - start) * eased);
+    el.textContent = '₹' + current;
+    if (p < 1) requestAnimationFrame(tick);
+    else el.dataset.value = target;
+  }
+  requestAnimationFrame(tick);
+}
+
+async function loadWallet() {
+  try {
+    const data = await api('/api/payments/wallet');
+    animateCountUp(document.getElementById('wallet-balance'), data.wallet_balance);
+    document.getElementById('wallet-pending').textContent = data.pending_withdrawal
+      ? `₹${data.pending_withdrawal} pending withdrawal` : '';
+    const historyEl = document.getElementById('wallet-history');
+    if (!data.history.length) {
+      historyEl.innerHTML = `<div class="empty-state" style="padding:30px 0;">No transactions yet.</div>`;
+    } else {
+      historyEl.innerHTML = data.history.map(h => `
+        <div class="txn-row">
+          <div>
+            <div class="txn-title">${escapeHtml(h.task_title)}</div>
+            <div class="txn-date">${timeAgo(h.created_at)}</div>
+          </div>
+          <div class="txn-amount">+₹${h.payout_amount}</div>
+        </div>
+      `).join('');
+    }
+  } catch (err) { toast(err.message, 'error'); }
+  loadPaymentMethods();
+}
+
+// ================= PAYMENT METHODS =================
+const CARD_ICONS = { Visa: '💳', Mastercard: '💳', Amex: '💳', Discover: '💳', RuPay: '💳', Card: '💳' };
+
+function detectCardBrand(digits) {
+  if (/^4/.test(digits)) return 'Visa';
+  if (/^5[1-5]/.test(digits) || /^2(2[2-9]|[3-6]\d|7[01]|720)/.test(digits)) return 'Mastercard';
+  if (/^3[47]/.test(digits)) return 'Amex';
+  if (/^6(011|5)/.test(digits)) return 'Discover';
+  if (/^60|^65|^81|^82/.test(digits)) return 'RuPay';
+  return 'CARD';
+}
+
+async function loadPaymentMethods() {
+  const list = document.getElementById('payment-methods-list');
+  if (!list) return;
+  try {
+    const data = await api('/api/payments/methods');
+    const methods = data.methods || [];
+    if (!methods.length) {
+      list.innerHTML = `<p style="font-size:12px; color:var(--text-faint); margin-bottom:4px;">No saved payment methods yet.</p>`;
+      return;
+    }
+    list.innerHTML = methods.map(m => `
+      <div class="pm-row">
+        <div class="pm-row-left">
+          <div class="pm-icon">${m.type === 'card' ? '💳' : '📱'}</div>
+          <div>
+            <div class="pm-label">${escapeHtml(m.label)}${m.is_default ? '<span class="pm-default-badge">Default</span>' : ''}</div>
+            <div class="pm-sub">${m.type === 'card' ? 'Expires ' + escapeHtml(m.card_expiry || '') : 'UPI'}</div>
+          </div>
+        </div>
+        <button class="pm-delete" onclick="deletePaymentMethod('${m.id}')" aria-label="Remove">✕</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    list.innerHTML = `<p style="font-size:12px; color:var(--danger);">${err.message}</p>`;
+  }
+}
+
+async function deletePaymentMethod(id) {
+  try {
+    await api('/api/payments/methods/' + id, { method: 'DELETE' });
+    toast('Removed', 'success');
+    loadPaymentMethods();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// --- Add UPI sheet ---
+function openAddUpiSheet() {
+  document.getElementById('upi-input').value = '';
+  updateUpiPreview();
+  document.getElementById('upi-overlay').classList.add('open');
+  document.getElementById('upi-sheet').classList.add('open');
+}
+function closeAddUpiSheet() {
+  document.getElementById('upi-overlay').classList.remove('open');
+  document.getElementById('upi-sheet').classList.remove('open');
+}
+function updateUpiPreview() {
+  const val = document.getElementById('upi-input').value.trim();
+  const valid = /^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/.test(val);
+  document.getElementById('upi-preview-text').textContent = val || 'your-id@bank';
+  document.getElementById('upi-preview-check').classList.toggle('valid', valid);
+}
+async function submitAddUpi() {
+  const upi_id = document.getElementById('upi-input').value.trim();
+  try {
+    await api('/api/payments/methods/upi', { method: 'POST', body: JSON.stringify({ upi_id }) });
+    toast('UPI ID saved!', 'success');
+    closeAddUpiSheet();
+    loadPaymentMethods();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// --- Add Card sheet (live animated preview) ---
+function openAddCardSheet() {
+  document.getElementById('card-name').value = '';
+  document.getElementById('card-number').value = '';
+  document.getElementById('card-expiry').value = '';
+  document.getElementById('card-cvc').value = '';
+  document.getElementById('card3d').classList.remove('flipped');
+  document.getElementById('card-form-fields').classList.remove('hidden');
+  document.getElementById('card-success').classList.add('hidden');
+  updateCardPreview();
+  document.getElementById('card-overlay').classList.add('open');
+  document.getElementById('card-sheet').classList.add('open');
+}
+function closeAddCardSheet() {
+  document.getElementById('card-overlay').classList.remove('open');
+  document.getElementById('card-sheet').classList.remove('open');
+}
+function flipCard(showBack) {
+  document.getElementById('card3d').classList.toggle('flipped', showBack);
+}
+function updateCardPreview() {
+  const name = document.getElementById('card-name').value.trim();
+  let numRaw = document.getElementById('card-number').value.replace(/\D/g, '').slice(0, 19);
+  // Auto-format with spaces every 4 digits as the person types
+  const formatted = numRaw.replace(/(.{4})/g, '$1 ').trim();
+  document.getElementById('card-number').value = formatted;
+
+  let expiry = document.getElementById('card-expiry').value.replace(/\D/g, '').slice(0, 4);
+  if (expiry.length >= 3) expiry = expiry.slice(0, 2) + '/' + expiry.slice(2);
+  document.getElementById('card-expiry').value = expiry;
+
+  const cvc = document.getElementById('card-cvc').value.replace(/\D/g, '').slice(0, 4);
+  document.getElementById('card-cvc').value = cvc;
+
+  const brand = numRaw.length >= 2 ? detectCardBrand(numRaw) : 'CARD';
+  document.getElementById('card3d-brand').textContent = brand;
+  // Build a 16-character display: real typed digits followed by bullet placeholders
+  const padded = (numRaw + '•'.repeat(16)).slice(0, 16);
+  const groups = padded.match(/.{1,4}/g) || [];
+  document.getElementById('card3d-number').textContent = groups.join(' ');
+  document.getElementById('card3d-name').textContent = name ? name.toUpperCase() : 'YOUR NAME';
+  document.getElementById('card3d-expiry').textContent = expiry || 'MM/YY';
+  document.getElementById('card3d-cvc').textContent = cvc ? cvc.padEnd(3, '•') : '•••';
+}
+function luhnCheckClient(numStr) {
+  let sum = 0, alt = false;
+  for (let i = numStr.length - 1; i >= 0; i--) {
+    let n = parseInt(numStr[i], 10);
+    if (alt) { n *= 2; if (n > 9) n -= 9; }
+    sum += n;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+async function submitAddCard() {
+  const cardholder_name = document.getElementById('card-name').value.trim();
+  const card_number = document.getElementById('card-number').value.replace(/\s/g, '');
+  const card_expiry = document.getElementById('card-expiry').value.trim();
+
+  if (!cardholder_name) { toast('Enter the cardholder name', 'error'); return; }
+  if (!/^\d{13,19}$/.test(card_number) || !luhnCheckClient(card_number)) {
+    toast('Enter a valid card number', 'error'); return;
+  }
+  if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(card_expiry)) { toast('Expiry must be MM/YY', 'error'); return; }
+
+  const btn = document.getElementById('card-submit-btn');
+  const original = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const data = await api('/api/payments/methods/card', {
+      method: 'POST',
+      body: JSON.stringify({ card_number, card_expiry, cardholder_name })
+    });
+    document.getElementById('card-form-fields').classList.add('hidden');
+    document.getElementById('card-success').classList.remove('hidden');
+    document.getElementById('card-success-label').textContent = data.method.label + ' saved';
+    loadPaymentMethods();
+  } catch (err) { toast(err.message, 'error'); }
+  finally { btn.innerHTML = original; }
+}
+
+function openWithdrawSheet() {
+  document.getElementById('withdraw-overlay').classList.add('open');
+  document.getElementById('withdraw-sheet').classList.add('open');
+}
+function closeWithdrawSheet() {
+  document.getElementById('withdraw-overlay').classList.remove('open');
+  document.getElementById('withdraw-sheet').classList.remove('open');
+}
+async function submitWithdraw() {
+  const amount = document.getElementById('wd-amount').value;
+  const upi_id = document.getElementById('wd-upi').value.trim();
+  try {
+    const data = await api('/api/payments/withdraw', { method: 'POST', body: JSON.stringify({ amount, upi_id }) });
+    toast(data.message, 'success');
+    closeWithdrawSheet();
+    loadWallet();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ================= NOTIFICATIONS =================
+async function loadNotifBadge() {
+  try {
+    const data = await api('/api/payments/notifications');
+    const badge = document.getElementById('notif-badge');
+    if (data.unread > 0) { badge.textContent = data.unread; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+  } catch (e) {}
+}
+
+async function loadNotifications() {
+  const list = document.getElementById('notif-list');
+  try {
+    const data = await api('/api/payments/notifications');
+    if (!data.notifications.length) {
+      list.innerHTML = `<div class="empty-state"><div class="emoji">🔔</div>No notifications yet.</div>`;
+      return;
+    }
+    list.innerHTML = data.notifications.map(n => `
+      <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n.id}')">
+        <div class="notif-dot" style="${n.read ? 'background:var(--text-faint);' : ''}"></div>
+        <div>
+          <div class="notif-title">${escapeHtml(n.title)}</div>
+          <div class="notif-body">${escapeHtml(n.body)}</div>
+          <div class="notif-time">${timeAgo(n.created_at)}</div>
+        </div>
+      </div>
+    `).join('');
+    loadNotifBadge();
+  } catch (err) { list.innerHTML = `<div class="empty-state">${err.message}</div>`; }
+}
+async function markNotifRead(id) {
+  try { await api('/api/payments/notifications/' + id + '/read', { method: 'POST' }); loadNotifications(); } catch (e) {}
+}
+
+// ================= PROFILE =================
+async function loadProfile() {
+  try {
+    const data = await api('/api/auth/me');
+    currentUser = data.user;
+    localStorage.setItem('padosi_user', JSON.stringify(currentUser));
+    document.getElementById('profile-avatar').textContent = initials(currentUser.name);
+    document.getElementById('profile-name').textContent = currentUser.name;
+    document.getElementById('profile-phone').textContent = currentUser.phone;
+    document.getElementById('profile-area').textContent = currentUser.area || '—';
+    document.getElementById('profile-rating').textContent = '⭐ ' + Number(currentUser.rating || 5).toFixed(1);
+    document.getElementById('profile-completed').textContent = currentUser.tasks_completed || 0;
+    document.getElementById('profile-posted').textContent = currentUser.tasks_posted || 0;
+  } catch (err) {
+    if (err.message.includes('token') || err.message.includes('Session')) logout();
+  }
+  loadActivity();
+}
+
+async function loadActivity() {
+  try {
+    const data = await api('/api/payments/activity');
+    document.getElementById('profile-total-earned').textContent = '₹' + data.total_earned;
+    document.getElementById('profile-total-spent').textContent = '₹' + data.total_spent;
+
+    const list = document.getElementById('profile-activity-list');
+    if (!data.timeline.length) {
+      list.innerHTML = `<div class="empty-state" style="padding:20px 0;">No activity yet — post or complete a task to see it here.</div>`;
+      return;
+    }
+    list.innerHTML = data.timeline.slice(0, 20).map(item => `
+      <div class="txn-row">
+        <div>
+          <div class="txn-title">${escapeHtml(item.title)}</div>
+          <div class="txn-date">${timeAgo(item.created_at)}</div>
+        </div>
+        <div class="txn-amount" style="color:${item.type === 'earned' ? 'var(--success)' : 'var(--text-dim)'};">
+          ${item.type === 'earned' ? '+' : '−'}₹${item.amount}
+        </div>
+      </div>
+    `).join('');
+  } catch (err) { /* non-critical, fail quietly */ }
+}
+
+// ================= REVIEW =================
+// ================= CHAT =================
+let activeChatTaskId = null;
+
+function chatBubbleHTML(m) {
+  const mine = m.sender_id === currentUser.id;
+  const time = new Date(m.created_at.replace(' ', 'T') + 'Z').toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  return `
+    <div class="chat-bubble-row ${mine ? 'mine' : ''}">
+      <div>
+        <div class="chat-bubble">${escapeHtml(m.body)}</div>
+        <div class="chat-bubble-time">${mine ? 'You' : escapeHtml(m.sender_name)} · ${time}</div>
+      </div>
+    </div>`;
+}
+
+async function openChatSheet(taskId, otherName) {
+  activeChatTaskId = taskId;
+  document.getElementById('chat-sheet-title').textContent = 'Chat with ' + otherName;
+  document.getElementById('chat-messages').innerHTML = `<div class="empty-state" style="padding:20px 0;">Loading…</div>`;
+  document.getElementById('chat-overlay').classList.add('open');
+  document.getElementById('chat-sheet').classList.add('open');
+  if (socket) socket.emit('join-task', taskId);
+  await loadChatMessages();
+}
+
+function closeChatSheet() {
+  document.getElementById('chat-overlay').classList.remove('open');
+  document.getElementById('chat-sheet').classList.remove('open');
+  activeChatTaskId = null;
+}
+
+async function loadChatMessages() {
+  if (!activeChatTaskId) return;
+  try {
+    const data = await api('/api/tasks/' + activeChatTaskId + '/messages');
+    const el = document.getElementById('chat-messages');
+    if (!data.messages.length) {
+      el.innerHTML = `<div class="empty-state" style="padding:20px 0;">Say hi 👋</div>`;
+    } else {
+      el.innerHTML = data.messages.map(chatBubbleHTML).join('');
+      el.scrollTop = el.scrollHeight;
+    }
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const body = input.value.trim();
+  if (!body || !activeChatTaskId) return;
+  input.value = '';
+  try {
+    await api('/api/tasks/' + activeChatTaskId + '/messages', { method: 'POST', body: JSON.stringify({ body }) });
+    await loadChatMessages();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+function openReviewSheet(taskId) {
+  activeTaskForReview = taskId;
+  reviewRating = 0;
+  renderStars();
+  document.getElementById('review-comment').value = '';
+  closeSheet();
+  document.getElementById('review-overlay').classList.add('open');
+  document.getElementById('review-sheet').classList.add('open');
+}
+function closeReviewSheet() {
+  document.getElementById('review-overlay').classList.remove('open');
+  document.getElementById('review-sheet').classList.remove('open');
+}
+function renderStars() {
+  document.querySelectorAll('#review-stars .star').forEach(s => {
+    s.classList.toggle('active', Number(s.dataset.v) <= reviewRating);
+  });
+}
+document.getElementById('review-stars').addEventListener('click', (e) => {
+  if (e.target.classList.contains('star')) { reviewRating = Number(e.target.dataset.v); renderStars(); }
+});
+async function submitReview() {
+  if (!reviewRating) { toast('Pick a star rating', 'error'); return; }
+  const comment = document.getElementById('review-comment').value.trim();
+  try {
+    await api('/api/tasks/' + activeTaskForReview + '/review', { method: 'POST', body: JSON.stringify({ rating: reviewRating, comment }) });
+    toast('Thanks for your review!', 'success');
+    closeReviewSheet();
+    loadMyTasks();
+  } catch (err) { toast(err.message, 'error'); }
+}
+
+// ================= LAMP LOGIN ANIMATION =================
+let lampPulled = false;
+function spawnParticles() {
+  const field = document.getElementById('lamp-particles');
+  if (!field) return;
+  field.innerHTML = '';
+  const count = 16;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'lamp-particle';
+    const leftPct = 38 + Math.random() * 24; // cluster roughly under the beam
+    const bottomPx = 260 + Math.random() * 200;
+    p.style.left = leftPct + '%';
+    p.style.bottom = bottomPx + 'px';
+    p.style.animationDelay = (Math.random() * 5) + 's';
+    p.style.animationDuration = (4 + Math.random() * 3) + 's';
+    field.appendChild(p);
+  }
+}
+function pullLamp() {
+  if (lampPulled) return;
+  lampPulled = true;
+  document.getElementById('lamp-stage').classList.add('on');
+  spawnParticles();
+}
+
+// ================= THEME (dark/light) =================
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = theme === 'light' ? '☀️' : '🌙';
+  const profileLabel = document.getElementById('profile-theme-label');
+  if (profileLabel) profileLabel.textContent = theme === 'light' ? '☀️ Light' : '🌙 Dark';
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) metaTheme.setAttribute('content', theme === 'light' ? '#F8FAFC' : '#0B0F1A');
+  localStorage.setItem('padosi_theme', theme);
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+function initTheme() {
+  const saved = localStorage.getItem('padosi_theme');
+  if (saved) { applyTheme(saved); return; }
+  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  applyTheme(prefersLight ? 'light' : 'dark');
+}
+
+// ================= ENTRANCE ANIMATION =================
+// (Entrance animation is now handled by the lamp pull-string reveal above.)
+
+// ================= INIT =================
+(function init() {
+  initTheme();
+  setAuthMode('login');
+  if (token && currentUser) enterApp();
+
+  // Check if the server is running in mock-payments mode and show a banner
+  // if so, so nobody confuses a simulated payment for a real one.
+  fetch('/api/health').then(r => r.json()).then(data => {
+    if (data.mock_payments) document.getElementById('mock-banner').classList.remove('hidden');
+  }).catch(() => {});
+
+  // Show the splash "signal ping" briefly, then reveal the app underneath.
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) splash.classList.add('hide');
+  }, 1300);
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  // Poll notifications every 30s as a fallback if socket isn't connected
+  setInterval(() => { if (currentUser) loadNotifBadge(); }, 30000);
+})();
+</script>
+</body>
+</html>

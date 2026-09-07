@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Padosi — Hyperlocal help, reimagined.</title>
+<meta name="theme-color" content="#0B0F1A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0B0F1A;
+    --bg-elev: #10151f;
+    --bg-elev-2: #171e2d;
+    --surface: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+
+    --primary: #818CF8; --primary-bright: #A5B4FC; --primary-rgb: 129,140,248;
+    --accent: #2DD4BF; --accent-bright: #5EEAD4; --accent-rgb: 45,212,191;
+    --warning: #FBBF24; --warning-rgb: 251,191,36;
+    --danger: #FB7185; --danger-rgb: 251,113,133;
+    --success: #34D399; --success-rgb: 52,211,153;
+
+    --text: #F1F5F9;
+    --text-dim: #94A3B8;
+    --text-faint: #475569;
+    --expo: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #F8FAFC; --bg-elev: #FFFFFF; --bg-elev-2: #F1F5F9;
+    --surface: rgba(15,23,42,0.04); --border: rgba(15,23,42,0.08);
+    --primary: #6366F1; --primary-bright: #4F46E5; --primary-rgb: 99,102,241;
+    --accent: #0D9488; --accent-bright: #0F766E; --accent-rgb: 13,148,136;
+    --warning: #D97706; --warning-rgb: 217,119,6;
+    --danger: #E11D48; --danger-rgb: 225,29,72;
+    --success: #059669; --success-rgb: 5,150,105;
+    --text: #0F172A; --text-dim: #475569; --text-faint: #94A3B8;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s var(--expo), color 0.3s var(--expo);
+  }
+
+  .blob-field { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; animation: float 18s ease-in-out infinite; }
+  .blob-1 { width: 420px; height: 420px; background: var(--primary); top: -10%; left: -10%; animation-delay: 0s; }
+  .blob-2 { width: 380px; height: 380px; background: var(--accent); top: 30%; right: -15%; animation-delay: -6s; }
+  .blob-3 { width: 320px; height: 320px; background: var(--warning); bottom: -10%; left: 20%; opacity: 0.18; animation-delay: -12s; }
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(40px, -30px) scale(1.08); }
+    66% { transform: translate(-30px, 20px) scale(0.95); }
+  }
+
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 18px 32px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(11,15,26,0.7);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.3s var(--expo);
+  }
+  :root[data-theme="light"] .nav { background: rgba(248,250,252,0.75); }
+  .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 800; letter-spacing: -0.3px; }
+  .nav-logo .mark {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: #fff; font-size: 15px;
+  }
+  .nav-links { display: flex; gap: 28px; list-style: none; }
+  .nav-links a { color: var(--text-dim); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
+  .theme-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 15px; color: var(--text);
+  }
+  .nav-cta {
+    background: linear-gradient(135deg, var(--primary), var(--primary-bright));
+    color: #fff; padding: 9px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 600; text-decoration: none;
+    transition: transform 0.3s var(--expo), box-shadow 0.3s;
+  }
+  .nav-cta:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.4); }
+
+  .hero {
+    position: relative; z-index: 1; min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 120px 24px 60px;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 6px 16px; border-radius: 999px; font-size: 13px; color: var(--text-dim);
+    margin-bottom: 28px; opacity: 0; transform: translateY(14px);
+  }
+  .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+  .hero h1 { font-size: clamp(40px, 8vw, 88px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 22px; }
+  .hero h1 .line { display: block; overflow: hidden; }
+  .hero h1 .line-inner { display: block; transform: translateY(110%); }
+  .hero h1 .grad {
+    background: linear-gradient(120deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero p {
+    font-size: clamp(15px, 2vw, 19px); color: var(--text-dim);
+    max-width: 560px; line-height: 1.6; margin-bottom: 36px;
+    opacity: 0; transform: translateY(14px);
+  }
+  .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; opacity: 0; transform: translateY(14px); }
+
+  .btn {
+    padding: 15px 32px; border-radius: 999px; font-size: 15px; font-weight: 600;
+    text-decoration: none; border: none; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform 0.3s var(--expo), box-shadow 0.3s;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-bright)); color: #fff; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(var(--primary-rgb), 0.4); }
+  .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg-elev-2); }
+
+  .stats-bar {
+    position: relative; z-index: 1;
+    display: flex; justify-content: center; gap: 64px; flex-wrap: wrap;
+    padding: 56px 24px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .stat { text-align: center; opacity: 0; transform: translateY(16px); }
+  .stat .num {
+    font-size: clamp(30px, 4.5vw, 52px); font-weight: 800;
+    background: linear-gradient(120deg, var(--primary-bright), var(--accent-bright));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    line-height: 1;
+  }
+  .stat .lbl { font-size: 13px; color: var(--text-dim); margin-top: 6px; font-weight: 500; }
+
+  .section { position: relative; z-index: 1; padding: 120px 32px; max-width: 1180px; margin: 0 auto; }
+  .section-head { text-align: center; max-width: 620px; margin: 0 auto 56px; }
+  .section-eyebrow {
+    display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+  }
+  .section-title { font-size: clamp(28px, 4vw, 46px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+  .section-sub { font-size: 16px; color: var(--text-dim); margin-top: 14px; line-height: 1.6; }
+
+  .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .feature-card {
+    background: var(--bg-elev); border: 1px solid var(--border); border-radius: 20px;
+    padding: 30px 26px; opacity: 0; transform: translateY(20px);
+    transition: transform 0.3s var(--expo), border-color 0.3s;
+  }
+  .feature-card:hover { transform: translateY(-4px); border-color: rgba(var(--primary-rgb), 0.4); }
+  .feature-icon {
+    width: 46px; height: 46px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    margin-bottom: 18px;
+  }
+  .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.2px; }
+  .feature-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+
+  .how-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .how-step { text-align: center; opacity: 0; transform: translateY(20px); }
+  .how-step .step-num {
+    width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: var(--primary-bright);
+  }
+  .how-step h4 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .how-step p { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+
+  .phone-frame {
+    max-width: 300px; margin: 0 auto; border-radius: 36px;
+    background: var(--bg-elev-2); border: 1px solid var(--border);
+    padding: 14px; box-shadow: 0 40px 80px rgba(0,0,0,0.3);
+  }
+  .phone-screen-inner { background: var(--bg); border-radius: 24px; padding: 20px 16px; min-height: 380px; }
+  .mock-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .mock-price { color: var(--primary-bright); font-weight: 700; font-size: 15px; }
+  .mock-tag { font-size: 10px; color: var(--accent); background: rgba(var(--accent-rgb),0.12); padding: 3px 8px; border-radius: 999px; display: inline-block; margin-bottom: 6px; }
+
+  .cta-section { position: relative; z-index: 1; text-align: center; padding: 140px 24px; }
+  .cta-card {
+    max-width: 720px; margin: 0 auto; padding: 64px 40px; border-radius: 32px;
+    background: linear-gradient(135deg, rgba(var(--primary-rgb),0.15), rgba(var(--accent-rgb),0.08));
+    border: 1px solid rgba(var(--primary-rgb), 0.25);
+    opacity: 0; transform: translateY(20px);
+  }
+  .cta-card h2 { font-size: clamp(28px, 5vw, 48px); font-weight: 800; margin-bottom: 16px; letter-spacing: -0.02em; }
+  .cta-card p { color: var(--text-dim); font-size: 16px; margin-bottom: 30px; }
+
+  footer {
+    position: relative; z-index: 1; border-top: 1px solid var(--border); padding: 40px 32px;
+    text-align: center; color: var(--text-faint); font-size: 13px;
+  }
+
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s var(--expo), transform 0.7s var(--expo); }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 860px) {
+    .nav-links { display: none; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .how-steps { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 520px) {
+    .nav { padding: 14px 18px; }
+    .section { padding: 80px 20px; }
+    .how-steps { grid-template-columns: 1fr; }
+    .stats-bar { gap: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob-field">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<nav class="nav">
+  <div class="nav-logo"><div class="mark">P</div>Padosi</div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#safety">Safety</a></li>
+  </ul>
+  <div class="nav-actions">
+    <div class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</div>
+    <a href="/" class="nav-cta">Open App</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge"><span class="dot"></span> Now live with real-time task feed</div>
+  <h1>
+    <span class="line"><span class="line-inner">Hyperlocal help,</span></span>
+    <span class="line"><span class="line-inner"><span class="grad">reimagined.</span></span></span>
+  </h1>
+  <p>Get things done by people on your campus — print-outs, errands, sending notes across hostels, even fetching Maggi at midnight. Your padosi has your back.</p>
+  <div class="hero-cta">
+    <a href="/" class="btn btn-primary">Get started free</a>
+    <a href="#how" class="btn btn-ghost">See how it works</a>
+  </div>
+</section>
+
+<div class="stats-bar">
+  <div class="stat"><div class="num" data-count="50000">0</div><div class="lbl">Tasks completed</div></div>
+  <div class="stat"><div class="num" data-count="12000">0</div><div class="lbl">Active students</div></div>
+  <div class="stat"><div class="num" data-count="98">0</div><div class="lbl">% satisfaction</div></div>
+</div>
+
+<section class="section" id="features">
+  <div class="section-head">
+    <div class="section-eyebrow">Why Padosi</div>
+    <h2 class="section-title">Everything a hyperlocal favor needs</h2>
+    <p class="section-sub">Built for the small stuff — the errands too minor for a delivery app, too far for a walk.</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card reveal">
+      <div class="feature-icon" style="background: rgba(var(--primary-rgb),0.15); color: var(--primary-bright);">⚡</div>
+      <h3>Real-time feed</h3>
+      <p>New tasks in your area appear instantly — no refresh needed. Spot it, accept it, done.</p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon" style="background: rgba(var(--accent-rgb),0.15); color: var(--accent-bright);">🔒</div>
+      <h3>Secure payments</h3>
+      <p>Razorpay-powered checkout with signature verification. Your money moves safely, every time.</p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon" style="background: rgba(var(--warning-rgb),0.15); color: var(--warning);">📤</div>
+      <h3>Send or buy anything</h3>
+      <p>Need a parcel dropped off, or milk fetched from the store? There's a task type for that.</p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon" style="background: rgba(var(--success-rgb),0.15); color: var(--success);">⭐</div>
+      <h3>Ratings you can trust</h3>
+      <p>Every completed task gets reviewed both ways, so good neighbors stand out.</p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon" style="background: rgba(var(--danger-rgb),0.15); color: var(--danger);">🔔</div>
+      <h3>Instant notifications</h3>
+      <p>Know the moment your task is accepted, completed, or paid — no guessing games.</p>
+    </div>
+    <div class="feature-card reveal">
+      <div class="feature-icon" style="background: rgba(var(--primary-rgb),0.15); color: var(--primary-bright);">💰</div>
+      <h3>Built-in wallet</h3>
+      <p>Earnings land straight in your Padosi wallet, ready to withdraw to UPI whenever you like.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="section-head">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-title">Four steps. That's it.</h2>
+  </div>
+  <div class="how-steps">
+    <div class="how-step reveal"><div class="step-num">1</div><h4>Post a task</h4><p>Say what you need and set a fair price.</p></div>
+    <div class="how-step reveal"><div class="step-num">2</div><h4>Neighbor accepts</h4><p>Someone nearby picks it up in real time.</p></div>
+    <div class="how-step reveal"><div class="step-num">3</div><h4>Task gets done</h4><p>They complete it and mark it done.</p></div>
+    <div class="how-step reveal"><div class="step-num">4</div><h4>Pay & rate</h4><p>Pay securely, then rate each other.</p></div>
+  </div>
+</section>
+
+<section class="section" id="safety">
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;">
+    <div class="reveal">
+      <div class="section-eyebrow">Safety first</div>
+      <h2 class="section-title" style="margin-bottom:16px;">Every rupee, every review, verified.</h2>
+      <p class="section-sub" style="margin-top:0;">Payments are verified with cryptographic signatures before anyone gets credited. Passwords are hashed, sessions expire, and every account builds a visible reputation over time.</p>
+    </div>
+    <div class="phone-frame reveal">
+      <div class="phone-screen-inner">
+        <div class="mock-tag">🖨️ Print/Xerox</div>
+        <div class="mock-card"><span>Print 20 pages, Block C</span><span class="mock-price">₹20</span></div>
+        <div class="mock-tag" style="background: rgba(var(--warning-rgb),0.12); color: var(--warning);">🛒 Buy for me</div>
+        <div class="mock-card"><span>Maggi & cold drink</span><span class="mock-price">₹80</span></div>
+        <div class="mock-tag" style="background: rgba(var(--accent-rgb),0.12); color: var(--accent-bright);">📤 Send item</div>
+        <div class="mock-card"><span>Notes to Hostel Block A</span><span class="mock-price">₹30</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="cta-card reveal">
+    <h2>Ready to get things done?</h2>
+    <p>Join your neighbors already helping each other out.</p>
+    <a href="/" class="btn btn-primary">Launch Padosi</a>
+  </div>
+</section>
+
+<footer>
+  <p>Padosi. Built for neighbors, by neighbors.</p>
+</footer>
+
+<script>
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.getElementById('theme-btn').textContent = theme === 'light' ? '☀️' : '🌙';
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'light' ? '#F8FAFC' : '#0B0F1A');
+    localStorage.setItem('padosi_theme', theme);
+  }
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    applyTheme(cur === 'light' ? 'dark' : 'light');
+  }
+  (function initTheme() {
+    const saved = localStorage.getItem('padosi_theme');
+    if (saved) { applyTheme(saved); return; }
+    const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    applyTheme(prefersLight ? 'light' : 'dark');
+  })();
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const els = [
+      ['.hero-badge', 0],
+      ['.hero h1 .line-inner', 150],
+      ['.hero p', 500],
+      ['.hero-cta', 650]
+    ];
+    els.forEach(([sel, delay]) => {
+      document.querySelectorAll(sel).forEach((el, i) => {
+        setTimeout(() => {
+          el.style.transition = 'opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)';
+          el.style.opacity = '1';
+          el.style.transform = 'translateY(0)';
+        }, delay + i * 80);
+      });
+    });
+  });
+
+  const revealEls = document.querySelectorAll('.reveal, .stat, .feature-card, .how-step');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry, idx) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('in'), idx * 60);
+        entry.target.style.transition = 'opacity 0.6s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1)';
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  revealEls.forEach(el => io.observe(el));
+
+  const statEls = document.querySelectorAll('.stat .num');
+  const statIO = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const target = parseInt(el.dataset.count, 10);
+      const duration = 1400;
+      const start = performance.now();
+      function tick(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.floor(eased * target).toLocaleString('en-IN');
+        if (p < 1) requestAnimationFrame(tick);
+        else el.textContent = target.toLocaleString('en-IN');
+      }
+      requestAnimationFrame(tick);
+      statIO.unobserve(el);
+    });
+  }, { threshold: 0.5 });
+  statEls.forEach(el => statIO.observe(el));
+</script>
+</body>
+</html>
